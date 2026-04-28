@@ -1,3 +1,6 @@
+<img width="1910" height="1033" alt="Screenshot 2026-04-28 172727" src="https://github.com/user-attachments/assets/534a5566-d7b5-45b8-814d-e7be80b37e6d" />
+
+
 # cosmo-tui
 
 A terminal dashboard for NASA's open data. Real-time world map, asteroid tracker, ISS tracker, space weather, fireball events, impact risk monitor, and more — all in your terminal.
