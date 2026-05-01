@@ -14,7 +14,6 @@ from importlib.resources import files
 from rich.text import Text
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.dom import COMPONENT_CLASSES
 
 from ..api.eonet import Event
 from ..api.fireball import Fireball
@@ -149,11 +148,8 @@ def _project(lat: float, lon: float, w: int, h: int) -> tuple[int, int]:
 # ---------- widget ----------
 
 class WorldMap(Widget):
-    COMPONENT_CLASSES = {"worldmap--land", "worldmap--sea"}
     DEFAULT_CSS = """
     WorldMap { background: #0a0a0f; color: #a0a0c0; }
-    WorldMap > .worldmap--land { color: #a0a0c0; background: #0a0a0f; }
-    WorldMap > .worldmap--sea { background: #0a0a0f; }
     """
 
     events: reactive[list[Event]] = reactive(list)
@@ -181,9 +177,9 @@ class WorldMap(Widget):
 
         chars: list[list[str]] = [list(r) for r in rows]
         
-        # We'll use style objects instead of raw strings to avoid ambiguity
-        land_style = self.get_component_rich_style("worldmap--land")
-        sea_style = self.get_component_rich_style("worldmap--sea")
+        is_classic = self.theme_name == "classic"
+        land_style = "#00ff00 on #000000" if is_classic else "#a0a0c0 on #0a0a0f"
+        sea_style = "on #000000" if is_classic else "on #0a0a0f"
 
         styles: list[list[any]] = [
             [land_style if ch != "\u2800" else sea_style for ch in r] for r in rows
