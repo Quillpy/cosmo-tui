@@ -4,15 +4,32 @@ from rich.text import Text
 from textual.reactive import reactive
 from textual.widget import Widget
 
+from textual.binding import Binding
 from ..api.apod import Apod
-
+from ..utils.download import download_image
 
 class ApodViewer(Widget):
+    BINDINGS = [
+        Binding("s", "save", "Save Image"),
+    ]
+    can_focus = True
     apod: reactive[Apod | None] = reactive(None, recompose=False)
 
     def set_apod(self, apod: Apod | None) -> None:
         self.apod = apod
         self.refresh()
+
+    async def action_save(self) -> None:
+        if not self.apod or not self.apod.url:
+            self.app.notify("No image available to save", severity="error")
+            return
+        
+        url = self.apod.hdurl or self.apod.url
+        try:
+            path = await download_image(url, f"apod_{self.apod.date}")
+            self.app.notify(f"Image saved to {path}", title="Success")
+        except Exception as e:
+            self.app.notify(f"Failed to save image: {e}", severity="error")
 
     def render(self) -> Text:
         t = Text()

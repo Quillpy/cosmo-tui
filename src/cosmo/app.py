@@ -13,8 +13,10 @@ from .api.client import NasaClient
 from .api.donki import fetch_space_weather
 from .api.eonet import fetch_events
 from .api.epic import fetch_latest_epic
+from .api.exoplanet import fetch_recent_exoplanets
 from .api.fireball import fetch_fireballs
 from .api.mars import fetch_all_rovers_latest
+from .api.mars_weather import fetch_curiosity_weather
 from .api.neows import fetch_neos
 from .api.sentry import fetch_sentry_objects
 from .api.tle import fetch_iss_position
@@ -23,7 +25,11 @@ from .widgets.apod_viewer import ApodViewer
 from .widgets.asteroid import AsteroidTable
 from .widgets.epic_viewer import EpicViewer
 from .widgets.event_list import EventList
+from .widgets.exoplanets import ExoplanetTable
+from .widgets.iss_passes import IssPasses
 from .widgets.mars_rover import MarsRoverTable
+from .widgets.mars_weather import MarsWeatherPanel
+from .widgets.media_search import MediaSearch
 from .widgets.sentry_watch import SentryWatch
 from .widgets.space_weather import SpaceWeatherPanel
 from .widgets.status_bar import StatusBar
@@ -230,6 +236,10 @@ class CosmoApp(App):
         self.sentry_watch: SentryWatch | None = None
         self.epic_viewer: EpicViewer | None = None
         self.mars_table: MarsRoverTable | None = None
+        self.mars_weather: MarsWeatherPanel | None = None
+        self.exoplanet_table: ExoplanetTable | None = None
+        self.media_search: MediaSearch | None = None
+        self.iss_passes: IssPasses | None = None
         self.status_bar: StatusBar | None = None
         self._refreshing = False
 
@@ -247,21 +257,33 @@ class CosmoApp(App):
                     with TabPane("Asteroids", id="tab-neo"):
                         self.asteroid_table = AsteroidTable()
                         yield self.asteroid_table
-                    with TabPane("Space Weather", id="tab-weather"):
+                    with TabPane("Weather", id="tab-weather"):
                         self.weather_panel = SpaceWeatherPanel()
                         yield self.weather_panel
+                    with TabPane("Mars Weather", id="tab-mars-weather"):
+                        self.mars_weather = MarsWeatherPanel()
+                        yield self.mars_weather
+                    with TabPane("Exoplanets", id="tab-exoplanet"):
+                        self.exoplanet_table = ExoplanetTable()
+                        yield self.exoplanet_table
                     with TabPane("APOD", id="tab-apod"):
                         self.apod_viewer = ApodViewer()
                         yield self.apod_viewer
-                    with TabPane("Mars", id="tab-mars"):
+                    with TabPane("Mars Photos", id="tab-mars"):
                         self.mars_table = MarsRoverTable()
                         yield self.mars_table
                     with TabPane("EPIC", id="tab-epic"):
                         self.epic_viewer = EpicViewer()
                         yield self.epic_viewer
-                    with TabPane("Sentry Watch", id="tab-sentry"):
+                    with TabPane("Sentry", id="tab-sentry"):
                         self.sentry_watch = SentryWatch()
                         yield self.sentry_watch
+                    with TabPane("NASA Search", id="tab-search"):
+                        self.media_search = MediaSearch()
+                        yield self.media_search
+                    with TabPane("ISS Passes", id="tab-iss"):
+                        self.iss_passes = IssPasses()
+                        yield self.iss_passes
         self.status_bar = StatusBar()
         self.status_bar.theme_name = self.config.theme
         yield self.status_bar
@@ -304,6 +326,9 @@ class CosmoApp(App):
                 self._load_sentry(),
                 self._load_mars(),
                 self._load_epic(),
+                self._load_mars_weather(),
+                self._load_exoplanets(),
+                self._load_iss_passes(),
                 self._update_iss(),
                 return_exceptions=True,
             )
@@ -378,6 +403,29 @@ class CosmoApp(App):
                 self.epic_viewer.set_images(images)
         except Exception as e:
             self.notify(f"Failed to load epic images: {e}", title="API Error", severity="error")
+
+    async def _load_mars_weather(self) -> None:
+        try:
+            w = await fetch_curiosity_weather(self.client)
+            if self.mars_weather:
+                self.mars_weather.set_weather(w)
+        except Exception as e:
+            self.notify(f"Failed to load Mars weather: {e}", title="API Error", severity="error")
+
+    async def _load_exoplanets(self) -> None:
+        try:
+            planets = await fetch_recent_exoplanets(self.client)
+            if self.exoplanet_table:
+                self.exoplanet_table.set_planets(planets)
+        except Exception as e:
+            self.notify(f"Failed to load exoplanets: {e}", title="API Error", severity="error")
+
+    async def _load_iss_passes(self) -> None:
+        try:
+            if self.iss_passes:
+                await self.iss_passes.refresh_passes(self.client)
+        except Exception as e:
+            self.notify(f"Failed to load ISS passes: {e}", title="API Error", severity="error")
 
     async def _update_iss(self) -> None:
         try:

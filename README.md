@@ -11,15 +11,15 @@ Built with [Textual](https://github.com/Textualize/textual) and [Rich](https://g
 
 - **ASCII World Map** — High-performance Braille-character world map with a spatial-grid optimization for smooth rendering.
 - **Natural Event Tracking** — Wildfires, storms, earthquakes, volcanoes, floods from NASA's EONET API, plotted as color-coded markers on the map.
-- **ISS Tracker** — Real-time International Space Station position plotted on the map, updated using TLE + SGP4 orbital computation.
-- **Mars Rover Photos** — Latest high-resolution photos from NASA's Perseverance and Curiosity rovers, including camera and Sol data.
-- **EPIC Earth Imagery** — Daily natural color imagery of the entire Earth captured by the DSCOVR satellite's EPIC camera.
-- **Space Weather** — Live monitor for solar flares, coronal mass ejections (CME), geomagnetic storms, and solar energetic particles (DONKI API).
-- **Asteroid Tracker & Sentry Watch** — Upcoming NEO close approaches and impact risk monitors with Palermo/Torino scale ratings.
-- **Fireball Events** — Meteorite atmospheric impacts detected by US government sensors, plotted on the map.
-- **Astronomy Picture of the Day** — Daily APOD with full descriptions and HD image links.
-- **Theming Support** — Choose between a modern "Default" theme or a retro "Classic" monochrome green terminal look.
-- **High Performance** — Concurrent API fetching and optimized rendering engine for a smooth TUI experience.
+- **ISS Tracker & Pass Predictions** — Real-time ISS position plotted on the map + local pass predictions based on your **automatically detected location**.
+- **Mars Weather** — Live environmental data (temperature, pressure, opacity) from the Curiosity rover's REMS instrument at Gale Crater.
+- **NASA Media Search** — Instant search across NASA's Image and Video Library directly from your terminal.
+- **Exoplanet Feed** — Real-time feed of the most recently confirmed planetary systems discovered beyond our solar system.
+- **Mars Rover Photos** — Latest high-resolution photos from NASA's Perseverance and Curiosity rovers.
+- **EPIC Earth Imagery** — Daily natural color imagery of the entire Earth captured by the DSCOVR satellite.
+- **Wallpaper Export** — Save any APOD or EPIC image as a local wallpaper with a single keypress (`s`).
+- **Space Weather** — Live monitor for solar flares, CMEs, and geomagnetic storms.
+- **Theming Support** — Choose between a modern "Default" theme or a retro "Classic" monochrome green look.
 
 ### Map Legend
 
@@ -55,19 +55,33 @@ cd cosmo-tui
 pip install -e .
 ```
 
-## Getting Your NASA API Key
+## APIs & External Services
 
-Cosmo uses NASA's free public APIs. You'll need an API key (takes 30 seconds):
+Cosmo aggregates data from several scientific and geographic services.
 
-1. Go to **[https://api.nasa.gov](https://api.nasa.gov)**
-2. Fill in your **First Name**, **Last Name**, and **Email**
-3. Click **Sign Up**
-4. Your API key will be **emailed to you instantly** and also shown on the page
-5. Copy the key.
+### 1. NASA Open Data (Requires API Key)
+The core of the application relies on the official NASA API portal. You need one free API key to access most features.
+*   **How to get it:**
+    1. Go to **[https://api.nasa.gov](https://api.nasa.gov)**
+    2. Sign up with your name and email.
+    3. Your key will be emailed to you instantly.
+*   **Used for:** APOD, Mars Rover Photos, EPIC Earth, Space Weather (DONKI), Near Earth Objects (NeoWs).
 
-That's it. The key is free, gives you **1,000 requests per hour**, and never expires.
+### 2. NASA Exoplanet Archive (No Key Required)
+Queries the [TAP service](https://exoplanetarchive.ipac.caltech.edu/docs/TAP_usage.html) for the latest confirmed exoplanet discoveries.
 
-> **Don't want to sign up?** You can use NASA's public `DEMO_KEY` which works but is rate-limited to 30 requests/hour and 50/day. Run cosmo with `--use-demo-key` to use it.
+### 3. NASA Image & Video Library (No Key Required)
+Powers the **NASA Search** feature via `images-api.nasa.gov`.
+
+### 4. MAAS2 Mars Weather (No Key Required)
+Provides Curiosity rover environmental data via the [MAAS2 API](https://api.maas2.apollorion.com/).
+
+### 5. ISS Tracking & Predictions (No Key Required)
+*   **Tracking:** Uses TLE data from [TLE.ivanstanojevic.me](http://tle.ivanstanojevic.me/).
+*   **Predictions:** Uses [Open Notify](http://open-notify.org/Open-Notify-API/ISS-Pass-Times/) to predict when the ISS will pass over your coordinates.
+
+### 6. Geolocation (No Key Required)
+Used once during app startup to detect your local Latitude/Longitude via [ip-api.com](https://ip-api.com/). This is strictly used to provide localized ISS pass predictions. No personal data is stored or transmitted.
 
 ## Usage
 
@@ -77,30 +91,17 @@ cosmo --theme classic    # Use retro green terminal theme
 cosmo --use-demo-key     # Use NASA's rate-limited DEMO_KEY
 cosmo --reset-key        # Re-enter your API key
 cosmo --refresh 120      # Set refresh interval to 120 seconds (default: 300)
-cosmo --version          # Show version
-cosmo --help             # Show help
 ```
 
-On first run, cosmo will prompt you to enter your NASA API key. It validates the key with a test API call, then saves it locally so you never have to enter it again.
+On first run, cosmo will prompt you to enter your NASA API key. It validates the key with a test API call, then saves it locally.
 
-### Where is my API key stored?
-
-Your key is saved locally on your machine in a config file:
-
-| OS | Path |
-|----|------|
-| Windows | `%LOCALAPPDATA%\cosmo\cosmo\config.json` |
-| Linux | `~/.config/cosmo/config.json` |
-| macOS | `~/Library/Application Support/cosmo/config.json` |
-
-The file is set to owner-only permissions (`600`). Your key is **never** sent anywhere except to `api.nasa.gov`.
-
-## Keybindings
+### Keybindings
 
 | Key | Action |
 |-----|--------|
 | `q` | Quit |
 | `r` | Refresh all data |
+| `s` | Save Image (in APOD/EPIC tabs) |
 | `1` | Focus world map |
 | `2` | Focus event list |
 | `3` | Focus tab panels |
