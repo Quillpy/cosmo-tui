@@ -12,14 +12,18 @@ from .api.apod import fetch_apod
 from .api.client import NasaClient
 from .api.donki import fetch_space_weather
 from .api.eonet import fetch_events
+from .api.epic import fetch_latest_epic
 from .api.fireball import fetch_fireballs
+from .api.mars import fetch_all_rovers_latest
 from .api.neows import fetch_neos
 from .api.sentry import fetch_sentry_objects
 from .api.tle import fetch_iss_position
 from .config import Config
 from .widgets.apod_viewer import ApodViewer
 from .widgets.asteroid import AsteroidTable
+from .widgets.epic_viewer import EpicViewer
 from .widgets.event_list import EventList
+from .widgets.mars_rover import MarsRoverTable
 from .widgets.sentry_watch import SentryWatch
 from .widgets.space_weather import SpaceWeatherPanel
 from .widgets.status_bar import StatusBar
@@ -130,14 +134,36 @@ class CosmoApp(App):
         self.weather_panel: SpaceWeatherPanel | None = None
         self.apod_viewer: ApodViewer | None = None
         self.sentry_watch: SentryWatch | None = None
+        self.epic_viewer: EpicViewer | None = None
+        self.mars_table: MarsRoverTable | None = None
         self.status_bar: StatusBar | None = None
         self._refreshing = False
+
+        if config.theme == "classic":
+            # Override CSS for classic green terminal look
+            self.CSS = self.CSS.replace("#0a0a0f", "#000000")
+            self.CSS = self.CSS.replace("#0d0d1a", "#000000")
+            self.CSS = self.CSS.replace("#00d4ff", "#00ff00")
+            self.CSS = self.CSS.replace("#c678dd", "#00ff00")
+            self.CSS = self.CSS.replace("#a0a0c0", "#00ff00")
+            self.CSS = self.CSS.replace("#1a3a4a", "#00ff00")
+            self.CSS = self.CSS.replace("#2a1a3a", "#00ff00")
+            self.CSS = self.CSS.replace("#1a1a2e", "#001100")
+            self.CSS = self.CSS.replace("#1a1a3e", "#003300")
+            self.CSS = self.CSS.replace("#0c0c14", "#050505")
+            # Also affect child components that might have their own DEFAULT_CSS
+            self.CSS += """
+            WorldMap { background: #000000; color: #00ff00; }
+            WorldMap > .worldmap--land { color: #00ff00; background: #000000; }
+            WorldMap > .worldmap--sea { background: #000000; }
+            """
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal(id="main"):
             with Container(id="map-pane"):
                 self.world_map = WorldMap()
+                self.world_map.theme_name = self.config.theme
                 yield self.world_map
             with Vertical(id="side-pane"):
                 self.event_list = EventList()
@@ -152,10 +178,17 @@ class CosmoApp(App):
                     with TabPane("APOD", id="tab-apod"):
                         self.apod_viewer = ApodViewer()
                         yield self.apod_viewer
+                    with TabPane("Mars", id="tab-mars"):
+                        self.mars_table = MarsRoverTable()
+                        yield self.mars_table
+                    with TabPane("EPIC", id="tab-epic"):
+                        self.epic_viewer = EpicViewer()
+                        yield self.epic_viewer
                     with TabPane("Sentry Watch", id="tab-sentry"):
                         self.sentry_watch = SentryWatch()
                         yield self.sentry_watch
         self.status_bar = StatusBar()
+        self.status_bar.theme_name = self.config.theme
         yield self.status_bar
         yield Footer()
 
@@ -192,6 +225,8 @@ class CosmoApp(App):
                 self._load_apod(),
                 self._load_fireballs(),
                 self._load_sentry(),
+                self._load_mars(),
+                self._load_epic(),
                 self._update_iss(),
                 return_exceptions=True,
             )
@@ -250,6 +285,22 @@ class CosmoApp(App):
                 self.sentry_watch.set_objects(objects)
         except Exception as e:
             self.log(f"sentry error: {e}")
+
+    async def _load_mars(self) -> None:
+        try:
+            photos = await fetch_all_rovers_latest(self.client)
+            if self.mars_table:
+                self.mars_table.set_photos(photos)
+        except Exception as e:
+            self.log(f"mars error: {e}")
+
+    async def _load_epic(self) -> None:
+        try:
+            images = await fetch_latest_epic(self.client)
+            if self.epic_viewer:
+                self.epic_viewer.set_images(images)
+        except Exception as e:
+            self.log(f"epic error: {e}")
 
     async def _update_iss(self) -> None:
         try:

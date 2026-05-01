@@ -19,6 +19,7 @@ class StatusBar(Widget):
     last_refresh: reactive[datetime | None] = reactive(None)
     rate_remaining: reactive[int | None] = reactive(None)
     next_refresh_in: reactive[int] = reactive(0)
+    theme_name: reactive[str] = reactive("default")
 
     def on_mount(self) -> None:
         # We don't need a separate interval because 'next_refresh_in' 
@@ -33,28 +34,34 @@ class StatusBar(Widget):
         next_in = f"next:{max(0, self.next_refresh_in)}s"
         keys = "[q]uit [r]efresh [tab]panel [?]help"
 
+        is_classic = self.theme_name == "classic"
+        
         t = Text()
-        t.append(f" \u2736 cosmo ", style="bold #c678dd")
-        t.append(f" {now_local} / {now_utc} ", style="#00d4ff")
-        t.append(f" last:{last} ", style="#50c878")
-        t.append(f" {next_in} ", style="#e5c07b")
-        t.append(f" {rate} ", style="#61afef")
-        t.append(f"  {keys}", style="#555577")
+        t.append(f" \u2736 cosmo ", style="bold #c678dd" if not is_classic else "bold #00ff00")
+        t.append(f" {now_local} / {now_utc} ", style="#00d4ff" if not is_classic else "#00ff00")
+        t.append(f" last:{last} ", style="#50c878" if not is_classic else "#00ff00")
+        t.append(f" {next_in} ", style="#e5c07b" if not is_classic else "#00ff00")
+        t.append(f" {rate} ", style="#61afef" if not is_classic else "#00ff00")
+        t.append(f"  {keys}", style="#555577" if not is_classic else "#00ff00")
         t.append("\n")
         # Map legend
-        t.append(" MAP: ", style="bold #555577")
-        t.append("\u25CF", style="bold red")
-        t.append(" Fire ", style="#555577")
-        t.append("\u25CF", style="bold blue")
-        t.append(" Storm ", style="#555577")
-        t.append("\u25CF", style="bold yellow")
-        t.append(" Quake ", style="#555577")
-        t.append("\u25CF", style="bold orange3")
-        t.append(" Volcano ", style="#555577")
-        t.append("\u25CF", style="bold green")
-        t.append(" Flood ", style="#555577")
-        t.append("\u2605", style="bold bright_yellow")
-        t.append(" Fireball ", style="#555577")
-        t.append("\u2726", style="bold bright_cyan")
-        t.append(" ISS", style="#555577")
+        t.append(" MAP: ", style="bold #555577" if not is_classic else "bold #00ff00")
+        
+        def sym(s, color):
+            t.append(s, style=f"bold {color}" if not is_classic else "bold #00ff00")
+
+        sym("\u25CF", "red")
+        t.append(" Fire ", style="#555577" if not is_classic else "#00ff00")
+        sym("\u25CF", "blue")
+        t.append(" Storm ", style="#555577" if not is_classic else "#00ff00")
+        sym("\u25CF", "yellow")
+        t.append(" Quake ", style="#555577" if not is_classic else "#00ff00")
+        sym("\u25CF", "orange3")
+        t.append(" Volcano ", style="#555577" if not is_classic else "#00ff00")
+        sym("\u25CF", "green")
+        t.append(" Flood ", style="#555577" if not is_classic else "#00ff00")
+        sym("\u2605", "bright_yellow")
+        t.append(" Fireball ", style="#555577" if not is_classic else "#00ff00")
+        sym("\u2726", "bright_cyan")
+        t.append(" ISS", style="#555577" if not is_classic else "#00ff00")
         return t

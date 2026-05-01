@@ -13,6 +13,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--reset-key", action="store_true", help="Re-enter NASA API key")
     p.add_argument("--use-demo-key", action="store_true", help="Use NASA DEMO_KEY")
     p.add_argument("--refresh", type=int, metavar="N", help="Refresh interval (seconds)")
+    p.add_argument("--theme", choices=["default", "classic"], help="UI theme")
     p.add_argument("--version", action="version", version=f"cosmo {__version__}")
     return p.parse_args(argv)
 
@@ -32,6 +33,9 @@ def run(argv: list[str] | None = None) -> int:
 
     if args.refresh:
         cfg.refresh_interval_seconds = max(30, args.refresh)
+    
+    if args.theme:
+        cfg.theme = args.theme
 
     try:
         CosmoApp(cfg).run()
