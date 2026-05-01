@@ -6,7 +6,7 @@ from datetime import datetime
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
+from textual.widgets import Footer, Header, TabbedContent, TabPane
 
 from .api.apod import fetch_apod
 from .api.client import NasaClient
@@ -32,86 +32,180 @@ from .widgets.worldmap import WorldMap
 
 class CosmoApp(App):
     CSS = """
+    $bg-base: #0a0a0f;
+    $bg-panel: #0d0d1a;
+    $bg-active: #1a1a2e;
+    $bg-cursor: #1a1a3e;
+    $bg-row-even: #0c0c14;
+    
+    $fg-base: #a0a0c0;
+    $fg-muted: #555577;
+    $fg-accent: #00d4ff;
+    $fg-highlight: #c678dd;
+    $fg-cursor: #e0e0ff;
+
+    $border-normal: #1a3a4a;
+    $border-event: #2a1a3a;
+
     Screen {
         layout: vertical;
-        background: #0a0a0f;
+        background: $bg-base;
     }
+
+    Screen.theme-classic {
+        background: #000000;
+    }
+
+    Screen.theme-classic #map-pane {
+        border: solid #00ff00;
+        border-title-color: #00ff00;
+    }
+
+    Screen.theme-classic EventList {
+        border: solid #00ff00;
+        border-title-color: #00ff00;
+    }
+
+    Screen.theme-classic TabbedContent {
+        border: solid #00ff00;
+    }
+
+    Screen.theme-classic Header {
+        background: #000000;
+        color: #00ff00;
+    }
+
+    Screen.theme-classic Footer {
+        background: #000000;
+        color: #00ff00;
+    }
+
+    Screen.theme-classic Footer > .footer--key {
+        background: #001100;
+        color: #00ff00;
+    }
+
+    Screen.theme-classic Footer > .footer--description {
+        color: #00ff00;
+    }
+
+    Screen.theme-classic DataTable {
+        background: #000000;
+        color: #00ff00;
+    }
+
+    Screen.theme-classic DataTable > .datatable--header {
+        background: #000000;
+        color: #00ff00;
+    }
+
+    Screen.theme-classic DataTable > .datatable--cursor {
+        background: #003300;
+        color: #00ff00;
+    }
+
+    Screen.theme-classic DataTable > .datatable--even-row {
+        background: #050505;
+    }
+
+    Screen.theme-classic TabbedContent ContentSwitcher {
+        background: #000000;
+    }
+
+    Screen.theme-classic Tabs {
+        background: #000000;
+    }
+
+    Screen.theme-classic Tab {
+        color: #00ff00;
+        background: #000000;
+    }
+
+    Screen.theme-classic Tab.-active {
+        color: #00ff00;
+        background: #001100;
+    }
+
+    Screen.theme-classic TabPane {
+        background: #000000;
+    }
+
     #main { height: 1fr; }
     #map-pane {
         width: 2fr;
-        border: solid #1a3a4a;
-        border-title-color: #00d4ff;
+        border: solid $border-normal;
+        border-title-color: $fg-accent;
     }
     #side-pane { width: 1fr; }
     WorldMap { height: 1fr; }
     EventList {
         height: 1fr;
-        border: solid #2a1a3a;
-        border-title-color: #c678dd;
+        border: solid $border-event;
+        border-title-color: $fg-highlight;
     }
     TabbedContent {
         height: 1fr;
-        border: solid #1a3a4a;
+        border: solid $border-normal;
     }
     SpaceWeatherPanel, ApodViewer { padding: 1; }
     StatusBar { height: 2; }
 
     Header {
-        background: #0d0d1a;
-        color: #00d4ff;
+        background: $bg-panel;
+        color: $fg-accent;
     }
     Footer {
-        background: #0d0d1a;
-        color: #555577;
+        background: $bg-panel;
+        color: $fg-muted;
     }
     Footer > .footer--key {
-        background: #1a1a2e;
-        color: #00d4ff;
+        background: $bg-active;
+        color: $fg-accent;
     }
     Footer > .footer--description {
-        color: #555577;
+        color: $fg-muted;
     }
 
     DataTable {
-        background: #0a0a0f;
-        color: #a0a0c0;
+        background: $bg-base;
+        color: $fg-base;
     }
     DataTable > .datatable--header {
-        background: #0d0d1a;
-        color: #00d4ff;
+        background: $bg-panel;
+        color: $fg-accent;
         text-style: bold;
     }
     DataTable > .datatable--cursor {
-        background: #1a1a3e;
-        color: #e0e0ff;
+        background: $bg-cursor;
+        color: $fg-cursor;
     }
     DataTable > .datatable--even-row {
-        background: #0c0c14;
+        background: $bg-row-even;
     }
     DataTable > .datatable--odd-row {
-        background: #0a0a0f;
+        background: $bg-base;
     }
 
     TabbedContent ContentSwitcher {
-        background: #0a0a0f;
+        background: $bg-base;
     }
     Tabs {
-        background: #0d0d1a;
+        background: $bg-panel;
     }
     Tab {
-        color: #555577;
-        background: #0d0d1a;
+        color: $fg-muted;
+        background: $bg-panel;
     }
     Tab.-active {
-        color: #00d4ff;
-        background: #1a1a2e;
+        color: $fg-accent;
+        background: $bg-active;
         text-style: bold;
     }
     Tab:hover {
-        color: #c678dd;
+        color: $fg-highlight;
     }
     TabPane {
-        background: #0a0a0f;
+        background: $bg-base;
     }
     """
 
@@ -138,25 +232,6 @@ class CosmoApp(App):
         self.mars_table: MarsRoverTable | None = None
         self.status_bar: StatusBar | None = None
         self._refreshing = False
-
-        if config.theme == "classic":
-            # Override CSS for classic green terminal look
-            self.CSS = self.CSS.replace("#0a0a0f", "#000000")
-            self.CSS = self.CSS.replace("#0d0d1a", "#000000")
-            self.CSS = self.CSS.replace("#00d4ff", "#00ff00")
-            self.CSS = self.CSS.replace("#c678dd", "#00ff00")
-            self.CSS = self.CSS.replace("#a0a0c0", "#00ff00")
-            self.CSS = self.CSS.replace("#1a3a4a", "#00ff00")
-            self.CSS = self.CSS.replace("#2a1a3a", "#00ff00")
-            self.CSS = self.CSS.replace("#1a1a2e", "#001100")
-            self.CSS = self.CSS.replace("#1a1a3e", "#003300")
-            self.CSS = self.CSS.replace("#0c0c14", "#050505")
-            # Also affect child components that might have their own DEFAULT_CSS
-            self.CSS += """
-            WorldMap { background: #000000; color: #00ff00; }
-            WorldMap > .worldmap--land { color: #00ff00; background: #000000; }
-            WorldMap > .worldmap--sea { background: #000000; }
-            """
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -195,6 +270,8 @@ class CosmoApp(App):
     async def on_mount(self) -> None:
         self.title = "cosmo"
         self.sub_title = "NASA Terminal Dashboard"
+        self.screen.add_class(f"theme-{self.config.theme}")
+        
         await self.refresh_all()
         interval = max(30, self.config.refresh_interval_seconds)
         self.set_interval(interval, lambda: asyncio.create_task(self.refresh_all()))
@@ -244,7 +321,7 @@ class CosmoApp(App):
             if self.event_list:
                 self.event_list.set_events(events)
         except Exception as e:
-            self.log(f"events error: {e}")
+            self.notify(f"Failed to load events: {e}", title="API Error", severity="error")
 
     async def _load_neos(self) -> None:
         try:
@@ -252,7 +329,7 @@ class CosmoApp(App):
             if self.asteroid_table:
                 self.asteroid_table.set_neos(neos)
         except Exception as e:
-            self.log(f"neos error: {e}")
+            self.notify(f"Failed to load neos: {e}", title="API Error", severity="error")
 
     async def _load_weather(self) -> None:
         try:
@@ -260,7 +337,7 @@ class CosmoApp(App):
             if self.weather_panel:
                 self.weather_panel.set_events(evs)
         except Exception as e:
-            self.log(f"weather error: {e}")
+            self.notify(f"Failed to load weather: {e}", title="API Error", severity="error")
 
     async def _load_apod(self) -> None:
         try:
@@ -268,7 +345,7 @@ class CosmoApp(App):
             if self.apod_viewer:
                 self.apod_viewer.set_apod(apod)
         except Exception as e:
-            self.log(f"apod error: {e}")
+            self.notify(f"Failed to load apod: {e}", title="API Error", severity="error")
 
     async def _load_fireballs(self) -> None:
         try:
@@ -276,7 +353,7 @@ class CosmoApp(App):
             if self.world_map:
                 self.world_map.set_fireballs(fireballs)
         except Exception as e:
-            self.log(f"fireballs error: {e}")
+            self.notify(f"Failed to load fireballs: {e}", title="API Error", severity="error")
 
     async def _load_sentry(self) -> None:
         try:
@@ -284,7 +361,7 @@ class CosmoApp(App):
             if self.sentry_watch:
                 self.sentry_watch.set_objects(objects)
         except Exception as e:
-            self.log(f"sentry error: {e}")
+            self.notify(f"Failed to load sentry objects: {e}", title="API Error", severity="error")
 
     async def _load_mars(self) -> None:
         try:
@@ -292,7 +369,7 @@ class CosmoApp(App):
             if self.mars_table:
                 self.mars_table.set_photos(photos)
         except Exception as e:
-            self.log(f"mars error: {e}")
+            self.notify(f"Failed to load mars photos: {e}", title="API Error", severity="error")
 
     async def _load_epic(self) -> None:
         try:
@@ -300,7 +377,7 @@ class CosmoApp(App):
             if self.epic_viewer:
                 self.epic_viewer.set_images(images)
         except Exception as e:
-            self.log(f"epic error: {e}")
+            self.notify(f"Failed to load epic images: {e}", title="API Error", severity="error")
 
     async def _update_iss(self) -> None:
         try:
@@ -308,7 +385,7 @@ class CosmoApp(App):
             if self.world_map:
                 self.world_map.set_iss(pos.lat, pos.lon)
         except Exception as e:
-            self.log(f"iss error: {e}")
+            self.notify(f"Failed to update ISS position: {e}", title="API Error", severity="error")
 
     async def action_refresh(self) -> None:
         await self.refresh_all()

@@ -5,8 +5,8 @@ import sys
 
 from . import __version__
 from .app import CosmoApp
-from .config import Config, first_run_setup, reset_key
-
+from .config import Config
+from .setup import first_run_setup, reset_key
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="cosmo", description="NASA Terminal Dashboard")
@@ -16,7 +16,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--theme", choices=["default", "classic"], help="UI theme")
     p.add_argument("--version", action="version", version=f"cosmo {__version__}")
     return p.parse_args(argv)
-
 
 def run(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
@@ -42,7 +41,6 @@ def run(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         return 130
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(run())
