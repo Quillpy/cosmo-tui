@@ -147,19 +147,18 @@ def _project(lat: float, lon: float, w: int, h: int) -> tuple[int, int]:
 
 # ---------- widget ----------
 
-LAND_STYLE = "#a0a0c0 on #0a0a0f"
-SEA_STYLE = "on #0a0a0f"
-
-
 class WorldMap(Widget):
     DEFAULT_CSS = """
     WorldMap { background: #0a0a0f; color: #a0a0c0; }
+    WorldMap > .worldmap--land { color: #a0a0c0; background: #0a0a0f; }
+    WorldMap > .worldmap--sea { background: #0a0a0f; }
     """
 
     events: reactive[list[Event]] = reactive(list)
     fireballs: reactive[list[Fireball]] = reactive(list)
     iss_position: reactive[tuple[float, float] | None] = reactive(None)
     selected_id: reactive[str | None] = reactive(None)
+    theme_name: reactive[str] = reactive("default")
 
     def set_events(self, events: list[Event]) -> None:
         self.events = list(events)
@@ -179,27 +178,37 @@ class WorldMap(Widget):
         rows = _build_cells(w, h)
 
         chars: list[list[str]] = [list(r) for r in rows]
-        styles: list[list[str]] = [
-            [LAND_STYLE if ch != "\u2800" else SEA_STYLE for ch in r] for r in rows
+        
+        # We'll use style objects instead of raw strings to avoid ambiguity
+        land_style = self.get_component_rich_style("worldmap--land")
+        sea_style = self.get_component_rich_style("worldmap--sea")
+
+        styles: list[list[any]] = [
+            [land_style if ch != "\u2800" else sea_style for ch in r] for r in rows
         ]
 
         # Overlay markers
+        is_classic = self.theme_name == "classic"
+        
         for ev in self.events:
             col, row = _project(ev.lat, ev.lon, w, h)
             marker = "X" if ev.id == self.selected_id else "\u25CF"
             chars[row][col] = marker
-            styles[row][col] = f"bold {ev.color} on #0a0a0f"
+            color = "#00ff00" if is_classic else ev.color
+            styles[row][col] = f"bold {color} on #0a0a0f" if not is_classic else "bold #00ff00 on #000000"
 
         for fb in self.fireballs:
             col, row = _project(fb.lat, fb.lon, w, h)
             chars[row][col] = "\u2605"
-            styles[row][col] = "bold bright_yellow on #0a0a0f"
+            color = "#00ff00" if is_classic else "bright_yellow"
+            styles[row][col] = f"bold {color} on #0a0a0f" if not is_classic else "bold #00ff00 on #000000"
 
         if self.iss_position is not None:
             lat, lon = self.iss_position
             col, row = _project(lat, lon, w, h)
             chars[row][col] = "\u2726"
-            styles[row][col] = "bold bright_cyan on #0a0a0f"
+            color = "#00ff00" if is_classic else "bright_cyan"
+            styles[row][col] = f"bold {color} on #0a0a0f" if not is_classic else "bold #00ff00 on #000000"
 
         text = Text()
         for r in range(h):
