@@ -21,7 +21,9 @@ class StatusBar(Widget):
     next_refresh_in: reactive[int] = reactive(0)
 
     def on_mount(self) -> None:
-        self.set_interval(1.0, self.refresh)
+        # We don't need a separate interval because 'next_refresh_in' 
+        # is updated every second by the app, which triggers a refresh.
+        pass
 
     def render(self) -> Text:
         now_utc = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
@@ -41,18 +43,18 @@ class StatusBar(Widget):
         t.append("\n")
         # Map legend
         t.append(" MAP: ", style="bold #555577")
-        t.append("\u25CF", style="bold #e06c75")
+        t.append("\u25CF", style="bold red")
         t.append(" Fire ", style="#555577")
-        t.append("\u25CF", style="bold #61afef")
+        t.append("\u25CF", style="bold blue")
         t.append(" Storm ", style="#555577")
-        t.append("\u25CF", style="bold #e5c07b")
+        t.append("\u25CF", style="bold yellow")
         t.append(" Quake ", style="#555577")
-        t.append("\u25CF", style="bold #d19a66")
+        t.append("\u25CF", style="bold orange3")
         t.append(" Volcano ", style="#555577")
-        t.append("\u25CF", style="bold #50c878")
+        t.append("\u25CF", style="bold green")
         t.append(" Flood ", style="#555577")
-        t.append("\u2605", style="bold #e5c07b")
+        t.append("\u2605", style="bold bright_yellow")
         t.append(" Fireball ", style="#555577")
-        t.append("\u2726", style="bold #00d4ff")
+        t.append("\u2726", style="bold bright_cyan")
         t.append(" ISS", style="#555577")
         return t

@@ -22,10 +22,12 @@ from ..api.fireball import Fireball
 # ---------- geojson + point-in-polygon ----------
 
 _POLYGONS = None
+_SPATIAL_GRID = None
+_GRID_SIZE = 12
 
 
 def _load_polygons():
-    global _POLYGONS
+    global _POLYGONS, _SPATIAL_GRID
     if _POLYGONS is not None:
         return _POLYGONS
     path = files("cosmo.data").joinpath("ne_110m_land.geojson")
@@ -45,6 +47,19 @@ def _load_polygons():
             ys = [p[1] for p in rings[0]]
             polys.append(((min(xs), min(ys), max(xs), max(ys)), rings))
     _POLYGONS = polys
+
+    # Build spatial grid for pruning
+    _SPATIAL_GRID = [[[] for _ in range(_GRID_SIZE)] for _ in range(_GRID_SIZE)]
+    for i, ((minx, miny, maxx, maxy), _) in enumerate(_POLYGONS):
+        gx_start = max(0, int((minx + 180.0) / 360.0 * _GRID_SIZE))
+        gx_end = min(_GRID_SIZE - 1, int((maxx + 180.0) / 360.0 * _GRID_SIZE))
+        gy_start = max(0, int((90.0 - maxy) / 180.0 * _GRID_SIZE))
+        gy_end = min(_GRID_SIZE - 1, int((90.0 - miny) / 180.0 * _GRID_SIZE))
+
+        for gy in range(gy_start, gy_end + 1):
+            for gx in range(gx_start, gx_end + 1):
+                _SPATIAL_GRID[gy][gx].append(i)
+
     return polys
 
 
@@ -62,16 +77,19 @@ def _point_in_ring(lon: float, lat: float, ring) -> bool:
 
 
 def _is_land(lat: float, lon: float) -> bool:
-    for (minx, miny, maxx, maxy), rings in _load_polygons():
-        if lon < minx or lon > maxx or lat < miny or lat > maxy:
-            continue
-        if not _point_in_ring(lon, lat, rings[0]):
-            continue
-        for hole in rings[1:]:
-            if _point_in_ring(lon, lat, hole):
-                break
-        else:
-            return True
+    polys = _load_polygons()
+    gx = max(0, min(_GRID_SIZE - 1, int((lon + 180.0) / 360.0 * _GRID_SIZE)))
+    gy = max(0, min(_GRID_SIZE - 1, int((90.0 - lat) / 180.0 * _GRID_SIZE)))
+
+    for idx in _SPATIAL_GRID[gy][gx]:
+        (minx, miny, maxx, maxy), rings = polys[idx]
+        if minx <= lon <= maxx and miny <= lat <= maxy:
+            if _point_in_ring(lon, lat, rings[0]):
+                for hole in rings[1:]:
+                    if _point_in_ring(lon, lat, hole):
+                        break
+                else:
+                    return True
     return False
 
 
@@ -145,19 +163,15 @@ class WorldMap(Widget):
 
     def set_events(self, events: list[Event]) -> None:
         self.events = list(events)
-        self.refresh()
 
     def set_fireballs(self, fireballs: list[Fireball]) -> None:
         self.fireballs = list(fireballs)
-        self.refresh()
 
     def set_iss(self, lat: float | None, lon: float | None) -> None:
         self.iss_position = (lat, lon) if lat is not None and lon is not None else None
-        self.refresh()
 
     def set_selected(self, event_id: str | None) -> None:
         self.selected_id = event_id
-        self.refresh()
 
     def render(self) -> Text:
         w = max(40, self.size.width)
@@ -169,15 +183,16 @@ class WorldMap(Widget):
             [LAND_STYLE if ch != "\u2800" else SEA_STYLE for ch in r] for r in rows
         ]
 
+        # Overlay markers
         for ev in self.events:
             col, row = _project(ev.lat, ev.lon, w, h)
-            marker = "X" if ev.id == self.selected_id else "\u25CF"  # ●
+            marker = "X" if ev.id == self.selected_id else "\u25CF"
             chars[row][col] = marker
             styles[row][col] = f"bold {ev.color} on #0a0a0f"
 
         for fb in self.fireballs:
             col, row = _project(fb.lat, fb.lon, w, h)
-            chars[row][col] = "\u2605"  # ★
+            chars[row][col] = "\u2605"
             styles[row][col] = "bold bright_yellow on #0a0a0f"
 
         if self.iss_position is not None:
@@ -188,8 +203,24 @@ class WorldMap(Widget):
 
         text = Text()
         for r in range(h):
-            for c in range(w):
-                text.append(chars[r][c], style=styles[r][c])
+            if not chars[r]:
+                continue
+            
+            curr_style = styles[r][0]
+            curr_chunk = [chars[r][0]]
+            
+            for c in range(1, w):
+                st = styles[r][c]
+                ch = chars[r][c]
+                if st == curr_style:
+                    curr_chunk.append(ch)
+                else:
+                    text.append("".join(curr_chunk), style=curr_style)
+                    curr_style = st
+                    curr_chunk = [ch]
+            
+            text.append("".join(curr_chunk), style=curr_style)
             if r < h - 1:
                 text.append("\n")
+        
         return text

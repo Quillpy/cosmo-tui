@@ -21,4 +21,5 @@ class AsteroidTable(DataTable):
             vel = f"{n.velocity_kms:.1f}"
             flag = "[red]\u26A0[/]" if n.hazardous else "[green]\u2713[/]"
             name = f"[red]{n.name}[/]" if n.hazardous else n.name
-            self.add_row(date, name, size, miss, vel, flag)
+            # Use name as a key since Neo doesn't have a better unique ID
+            self.add_row(date, name, size, miss, vel, flag, key=n.name)

@@ -35,32 +35,41 @@ async def fetch_space_weather(client: NasaClient, days: int = 7) -> list[Weather
 
     params = {"startDate": start, "endDate": end}
 
-    for item in await safe(f"{DONKI_BASE}/FLR", params):
+    results = await asyncio.gather(
+        safe(f"{DONKI_BASE}/FLR", params),
+        safe(f"{DONKI_BASE}/CME", params),
+        safe(f"{DONKI_BASE}/GST", params),
+        safe(f"{DONKI_BASE}/SEP", params),
+    )
+
+    flr_data, cme_data, gst_data, sep_data = results
+
+    for item in flr_data:
         events.append(WeatherEvent(
             kind="FLR",
-            time=item.get("beginTime", ""),
-            summary=f"Solar flare class {item.get('classType', '?')} from {item.get('sourceLocation', '?')}",
-            severity=item.get("classType", ""),
+            time=item.get("beginTime") or "",
+            summary=f"Solar flare class {item.get('classType') or '?'} from {item.get('sourceLocation') or '?'}",
+            severity=item.get("classType") or "",
         ))
-    for item in await safe(f"{DONKI_BASE}/CME", params):
+    for item in cme_data:
         events.append(WeatherEvent(
             kind="CME",
-            time=item.get("startTime", ""),
-            summary=item.get("note", "Coronal Mass Ejection")[:80],
+            time=item.get("startTime") or "",
+            summary=(item.get("note") or "Coronal Mass Ejection")[:80],
         ))
-    for item in await safe(f"{DONKI_BASE}/GST", params):
+    for item in gst_data:
         kp = item.get("allKpIndex") or []
         max_kp = max((k.get("kpIndex", 0) for k in kp), default=0)
         events.append(WeatherEvent(
             kind="GST",
-            time=item.get("startTime", ""),
+            time=item.get("startTime") or "",
             summary=f"Geomagnetic storm, max Kp={max_kp}",
             severity=f"Kp{max_kp}",
         ))
-    for item in await safe(f"{DONKI_BASE}/SEP", params):
+    for item in sep_data:
         events.append(WeatherEvent(
             kind="SEP",
-            time=item.get("eventTime", ""),
+            time=item.get("eventTime") or "",
             summary="Solar Energetic Particle event",
         ))
 

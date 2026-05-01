@@ -131,8 +131,7 @@ class CosmoApp(App):
         self.apod_viewer: ApodViewer | None = None
         self.sentry_watch: SentryWatch | None = None
         self.status_bar: StatusBar | None = None
-        self._refresh_task: asyncio.Task | None = None
-        self._iss_task: asyncio.Task | None = None
+        self._refreshing = False
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -178,21 +177,29 @@ class CosmoApp(App):
         await self.client.close()
 
     async def refresh_all(self) -> None:
+        if self._refreshing:
+            return
+        self._refreshing = True
+        
         if self.status_bar:
             self.status_bar.next_refresh_in = max(30, self.config.refresh_interval_seconds)
-        await asyncio.gather(
-            self._load_events(),
-            self._load_neos(),
-            self._load_weather(),
-            self._load_apod(),
-            self._load_fireballs(),
-            self._load_sentry(),
-            self._update_iss(),
-            return_exceptions=True,
-        )
-        if self.status_bar:
-            self.status_bar.last_refresh = datetime.now()
-            self.status_bar.rate_remaining = self.client.rate_limit_remaining
+        
+        try:
+            await asyncio.gather(
+                self._load_events(),
+                self._load_neos(),
+                self._load_weather(),
+                self._load_apod(),
+                self._load_fireballs(),
+                self._load_sentry(),
+                self._update_iss(),
+                return_exceptions=True,
+            )
+            if self.status_bar:
+                self.status_bar.last_refresh = datetime.now()
+                self.status_bar.rate_remaining = self.client.rate_limit_remaining
+        finally:
+            self._refreshing = False
 
     async def _load_events(self) -> None:
         try:

@@ -46,4 +46,5 @@ class SentryWatch(DataTable):
                 torino,
                 diam,
                 obj.last_obs,
+                key=obj.designation,
             )
