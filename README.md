@@ -3,22 +3,23 @@
 
 # cosmo-tui
 
-A terminal dashboard for NASA's open data. Real-time world map, asteroid tracker, ISS tracker, space weather, fireball events, impact risk monitor, and more — all in your terminal.
+A terminal dashboard for NASA's open data. Real-time world map, asteroid tracker, ISS tracker, space weather, Mars rover photos, Earth imagery, and more — all in your terminal.
 
 Built with [Textual](https://github.com/Textualize/textual) and [Rich](https://github.com/Textualize/rich).
 
 ## Features
 
-- **ASCII World Map** — Braille-character world map rendered from Natural Earth land polygons with live event plotting
-- **Natural Event Tracking** — Wildfires, storms, earthquakes, volcanoes, floods from NASA's EONET API, plotted as color-coded markers on the map
-- **Event List** — Scrollable list synced with the map; select an event to highlight it
-- **ISS Tracker** — Real-time International Space Station position plotted on the map, updated every 30 seconds using TLE + SGP4 orbital computation
-- **Fireball Events** — Meteorite atmospheric impacts detected by US government sensors, plotted on the map
-- **Asteroid Tracker** — Upcoming near-Earth object close approaches with size, miss distance, velocity, and hazard flags (NeoWs API)
-- **Sentry Watch** — Impact risk monitor showing all NEOs with non-zero Earth impact probability, with Palermo and Torino scale ratings (JPL Sentry API)
-- **Space Weather** — Solar flares, coronal mass ejections, geomagnetic storms, and solar energetic particles (DONKI API)
-- **Astronomy Picture of the Day** — Daily APOD with title, explanation, and image link
-- **Status Bar** — Live clock (local + UTC), last refresh time, countdown to next refresh, API rate quota, keyboard shortcuts, and a map legend
+- **ASCII World Map** — High-performance Braille-character world map with a spatial-grid optimization for smooth rendering.
+- **Natural Event Tracking** — Wildfires, storms, earthquakes, volcanoes, floods from NASA's EONET API, plotted as color-coded markers on the map.
+- **ISS Tracker** — Real-time International Space Station position plotted on the map, updated using TLE + SGP4 orbital computation.
+- **Mars Rover Photos** — Latest high-resolution photos from NASA's Perseverance and Curiosity rovers, including camera and Sol data.
+- **EPIC Earth Imagery** — Daily natural color imagery of the entire Earth captured by the DSCOVR satellite's EPIC camera.
+- **Space Weather** — Live monitor for solar flares, coronal mass ejections (CME), geomagnetic storms, and solar energetic particles (DONKI API).
+- **Asteroid Tracker & Sentry Watch** — Upcoming NEO close approaches and impact risk monitors with Palermo/Torino scale ratings.
+- **Fireball Events** — Meteorite atmospheric impacts detected by US government sensors, plotted on the map.
+- **Astronomy Picture of the Day** — Daily APOD with full descriptions and HD image links.
+- **Theming Support** — Choose between a modern "Default" theme or a retro "Classic" monochrome green terminal look.
+- **High Performance** — Concurrent API fetching and optimized rendering engine for a smooth TUI experience.
 
 ### Map Legend
 
@@ -72,6 +73,7 @@ That's it. The key is free, gives you **1,000 requests per hour**, and never exp
 
 ```bash
 cosmo                    # Launch the dashboard
+cosmo --theme classic    # Use retro green terminal theme
 cosmo --use-demo-key     # Use NASA's rate-limited DEMO_KEY
 cosmo --reset-key        # Re-enter your API key
 cosmo --refresh 120      # Set refresh interval to 120 seconds (default: 300)
@@ -111,6 +113,8 @@ The file is set to owner-only permissions (`600`). Your key is **never** sent an
 | Panel | API | Update Frequency |
 |-------|-----|-----------------|
 | World Map + Events | [EONET v3](https://eonet.gsfc.nasa.gov/docs/v3) | Every refresh cycle |
+| Mars Photos | [Mars Rover Photos](https://api.nasa.gov/#mars-photos) | Every refresh cycle |
+| EPIC Earth | [EPIC API](https://api.nasa.gov/#epic) | Every refresh cycle |
 | Asteroids | [NeoWs](https://api.nasa.gov/#asteroids-neows) | Every refresh cycle |
 | Space Weather | [DONKI](https://api.nasa.gov/#donki) | Every refresh cycle |
 | APOD | [APOD API](https://api.nasa.gov/#apod) | Every refresh cycle |
