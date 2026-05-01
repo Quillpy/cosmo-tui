@@ -14,6 +14,7 @@ from importlib.resources import files
 from rich.text import Text
 from textual.reactive import reactive
 from textual.widget import Widget
+from textual.dom import COMPONENT_CLASSES
 
 from ..api.eonet import Event
 from ..api.fireball import Fireball
@@ -148,6 +149,7 @@ def _project(lat: float, lon: float, w: int, h: int) -> tuple[int, int]:
 # ---------- widget ----------
 
 class WorldMap(Widget):
+    COMPONENT_CLASSES = {"worldmap--land", "worldmap--sea"}
     DEFAULT_CSS = """
     WorldMap { background: #0a0a0f; color: #a0a0c0; }
     WorldMap > .worldmap--land { color: #a0a0c0; background: #0a0a0f; }
