@@ -12,6 +12,9 @@ class MarsRoverTable(DataTable):
 
     def set_photos(self, photos: list[MarsPhoto]) -> None:
         self.clear()
+        if not photos:
+            self.add_row("Mars rover photos API unavailable", "", "", "", "", key="empty")
+            return
         for p in photos:
             self.add_row(
                 p.earth_date,

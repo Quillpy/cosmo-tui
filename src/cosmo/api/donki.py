@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from datetime import date, timedelta
 
@@ -26,20 +27,20 @@ async def fetch_space_weather(client: NasaClient, days: int = 7) -> list[Weather
     start, end = _date_range(days)
     events: list[WeatherEvent] = []
 
-    async def safe(url: str, params: dict) -> list:
+    params = {"startDate": start, "endDate": end}
+
+    async def safe_fetch(path: str) -> list[dict]:
         try:
-            data = await client.get(url, params=params)
+            data = await client.get(f"{DONKI_BASE}/{path}", params)
             return data if isinstance(data, list) else []
         except Exception:
             return []
 
-    params = {"startDate": start, "endDate": end}
-
     results = await asyncio.gather(
-        safe(f"{DONKI_BASE}/FLR", params),
-        safe(f"{DONKI_BASE}/CME", params),
-        safe(f"{DONKI_BASE}/GST", params),
-        safe(f"{DONKI_BASE}/SEP", params),
+        safe_fetch("FLR"),
+        safe_fetch("CME"),
+        safe_fetch("GST"),
+        safe_fetch("SEP"),
     )
 
     flr_data, cme_data, gst_data, sep_data = results

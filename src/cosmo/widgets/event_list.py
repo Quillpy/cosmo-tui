@@ -22,6 +22,9 @@ class EventList(DataTable):
     def set_events(self, events: list[Event]) -> None:
         self._events = events
         self.clear()
+        if not events:
+            self.add_row("No recent events", "", "", key="empty")
+            return
         for ev in events:
             date = (ev.date or "")[:10]
             cat = f"[{ev.color}]\u25CF[/] {ev.category_title}"

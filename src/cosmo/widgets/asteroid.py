@@ -14,6 +14,9 @@ class AsteroidTable(DataTable):
 
     def set_neos(self, neos: list[Neo]) -> None:
         self.clear()
+        if not neos:
+            self.add_row("No near-Earth objects available", "", "", "", "", "", key="empty")
+            return
         for n in neos:
             date = (n.date or "")[:16]
             size = f"{n.diameter_min_m:.0f}-{n.diameter_max_m:.0f}"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import sqrt
 from datetime import date, timedelta
 
 from .client import NasaClient
@@ -28,6 +29,7 @@ async def fetch_fireballs(client: NasaClient, days: int = 365) -> list[Fireball]
             "date-min": start.isoformat(),
             "date-max": end.isoformat(),
             "req-loc": "true",  # only fireballs with location data
+            "req-vel-comp": "true",
         },
     )
     results: list[Fireball] = []
@@ -41,17 +43,27 @@ async def fetch_fireballs(client: NasaClient, days: int = 365) -> list[Fireball]
 
     for row in rows:
         try:
-            lat_val = float(row[idx["lat"]])
+            lat_raw = row[idx["lat"]]
+            lon_raw = row[idx["lon"]]
             lat_dir = row[idx["lat-dir"]]
-            lon_val = float(row[idx["lon"]])
             lon_dir = row[idx["lon-dir"]]
+
+            if lat_raw is None or lon_raw is None or lat_dir is None or lon_dir is None:
+                continue
+
+            lat_val = float(lat_raw)
+            lon_val = float(lon_raw)
 
             lat = lat_val if lat_dir == "N" else -lat_val
             lon = lon_val if lon_dir == "E" else -lon_val
 
             energy = float(row[idx["energy"]]) if row[idx["energy"]] else 0.0
             impact_e = float(row[idx["impact-e"]]) if row[idx["impact-e"]] else 0.0
-            vel = float(row[idx["vel"]]) if row[idx["vel"]] else 0.0
+
+            vx = float(row[idx["vx"]]) if "vx" in idx and row[idx["vx"]] else 0.0
+            vy = float(row[idx["vy"]]) if "vy" in idx and row[idx["vy"]] else 0.0
+            vz = float(row[idx["vz"]]) if "vz" in idx and row[idx["vz"]] else 0.0
+            vel = sqrt(vx * vx + vy * vy + vz * vz)
 
             results.append(Fireball(
                 date=row[idx["date"]] or "",

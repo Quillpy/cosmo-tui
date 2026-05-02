@@ -34,7 +34,8 @@ class EpicViewer(Widget):
     def render(self) -> Text:
         t = Text()
         if not self.images:
-            t.append("Loading EPIC Earth imagery...\n", style="dim")
+            t.append("Latest EPIC Earth Imagery\n", style="bold #00d4ff")
+            t.append("Loading latest DSCOVR images...\n", style="bold")
             return t
         
         t.append("Latest EPIC Earth Imagery\n", style="bold #00d4ff")

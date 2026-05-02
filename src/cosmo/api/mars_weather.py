@@ -8,22 +8,36 @@ class MarsWeather:
     temp_min: float
     temp_max: float
     pressure: float
-    opacity: str
+    wind_direction: str
     season: str
     atmo_temp: float
 
 async def fetch_curiosity_weather(client: NasaClient) -> MarsWeather:
-    """Fetch latest weather report from Curiosity rover (MAAS2 API)."""
-    # Using MAAS2 API for Curiosity REMS data
-    data = await client.get("https://api.maas2.apollorion.com/")
-    if isinstance(data, dict):
-        return MarsWeather(
-            sol=int(data.get("sol", 0)),
-            temp_min=float(data.get("min_temp", 0.0)),
-            temp_max=float(data.get("max_temp", 0.0)),
-            pressure=float(data.get("pressure", 0.0)),
-            opacity=data.get("atmo_opacity", "Unknown"),
-            season=data.get("season", "Unknown"),
-            atmo_temp=float(data.get("atmo_temp", 0.0))
-        )
-    raise ValueError("Failed to fetch Mars weather data")
+    """Fetch latest weather report from NASA's InSight Mars weather API."""
+    data = await client.get(
+        "https://api.nasa.gov/insight_weather/",
+        params={"feedtype": "json", "ver": "1.0"},
+    )
+    if not isinstance(data, dict):
+        raise ValueError("Failed to fetch Mars weather data")
+
+    sol_keys = data.get("sol_keys") or []
+    if not sol_keys:
+        raise ValueError("No Mars weather sols available")
+
+    sol = sol_keys[-1]
+    sol_data = data.get(sol) or {}
+    at = sol_data.get("AT") or {}
+    pre = sol_data.get("PRE") or {}
+    wd = sol_data.get("WD") or {}
+    most_common = wd.get("most_common") or {}
+
+    return MarsWeather(
+        sol=int(sol),
+        temp_min=float(at.get("mn", 0.0)),
+        temp_max=float(at.get("mx", 0.0)),
+        pressure=float(pre.get("av", 0.0)),
+        wind_direction=most_common.get("compass_point", "Unknown"),
+        season=sol_data.get("Season", "Unknown"),
+        atmo_temp=float(at.get("av", 0.0)),
+    )

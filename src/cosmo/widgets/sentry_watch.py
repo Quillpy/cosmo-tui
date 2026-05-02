@@ -14,6 +14,9 @@ class SentryWatch(DataTable):
 
     def set_objects(self, objects: list[SentryObject]) -> None:
         self.clear()
+        if not objects:
+            self.add_row("No Sentry objects available", "", "", "", "", "", "", key="empty")
+            return
         for obj in objects:
             # Color code by Torino scale
             if obj.torino_scale >= 5:

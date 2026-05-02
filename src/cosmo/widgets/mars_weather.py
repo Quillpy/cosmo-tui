@@ -14,7 +14,8 @@ class MarsWeatherPanel(Widget):
     def render(self) -> Text:
         t = Text()
         if not self.weather:
-            t.append("Loading Mars weather data (Curiosity REMS)...\n", style="dim")
+            t.append("Mars Weather at Gale Crater\n", style="bold #00d4ff")
+            t.append("Loading latest Curiosity REMS report...\n", style="bold")
             return t
         
         w = self.weather
@@ -29,7 +30,7 @@ class MarsWeatherPanel(Widget):
         row("Temp Min:", f"{w.temp_min}\u00b0C", "#61afef")
         row("Atmo Temp:", f"{w.atmo_temp}\u00b0C", "#98c379")
         row("Pressure:", f"{w.pressure} Pa", "#e5c07b")
-        row("Opacity:", w.opacity, "#c678dd")
+        row("Wind Dir:", w.wind_direction, "#c678dd")
         
-        t.append("\nData provided by CAB/REMS via MAAS2 API.\n", style="dim italic")
+        t.append("\nData provided by NASA's InSight weather API.\n", style="dim italic")
         return t

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from .client import NasaClient
 
 MARS_BASE = "https://api.nasa.gov/mars-photos/api/v1/rovers"
+SUPPORTED_ROVERS = ("curiosity", "opportunity", "spirit")
 
 @dataclass
 class MarsPhoto:
@@ -15,7 +16,10 @@ class MarsPhoto:
     camera_name: str
     rover_name: str
 
-async def fetch_latest_mars_photos(client: NasaClient, rover: str = "perseverance") -> list[MarsPhoto]:
+async def fetch_latest_mars_photos(client: NasaClient, rover: str = "curiosity") -> list[MarsPhoto]:
+    if rover not in SUPPORTED_ROVERS:
+        return []
+
     url = f"{MARS_BASE}/{rover}/latest_photos"
     data = await client.get(url)
     if not isinstance(data, dict):
@@ -35,11 +39,12 @@ async def fetch_latest_mars_photos(client: NasaClient, rover: str = "perseveranc
     return results
 
 async def fetch_all_rovers_latest(client: NasaClient) -> list[MarsPhoto]:
-    # Perseverance and Curiosity are the main active ones
+    # The Mars Photos API only supports the legacy rover endpoints.
     results = await asyncio.gather(
-        fetch_latest_mars_photos(client, "perseverance"),
         fetch_latest_mars_photos(client, "curiosity"),
-        return_exceptions=True
+        fetch_latest_mars_photos(client, "opportunity"),
+        fetch_latest_mars_photos(client, "spirit"),
+        return_exceptions=True,
     )
     combined = []
     for res in results:

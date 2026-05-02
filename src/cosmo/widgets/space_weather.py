@@ -47,7 +47,7 @@ class SpaceWeatherPanel(Widget):
         t.append(level + "\n\n", style=f"bold {color}")
 
         if not self.events:
-            t.append("No recent space weather events.\n", style="dim")
+            t.append("No recent space weather events available.\n", style="bold")
             return t
 
         for e in self.events[:12]:

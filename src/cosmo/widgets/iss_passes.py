@@ -33,7 +33,7 @@ class IssPasses(Widget):
         t.append(f"{self.location_info}\n\n", style="dim")
         
         if not self.passes:
-            t.append("No upcoming passes found or service unavailable.\n", style="dim")
+            t.append("No upcoming passes found or service unavailable.\n", style="bold")
             return t
             
         t.append(f"{'Date & Time':25} {'Duration':10}\n", style="bold underline")

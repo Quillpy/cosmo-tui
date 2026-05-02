@@ -25,11 +25,17 @@ async def fetch_sentry_objects(client: NasaClient) -> list[SentryObject]:
     data = await client.get(SENTRY_URL)
     results: list[SentryObject] = []
 
-    for item in data.get("data", []):
+    items = data.get("data", [])
+    if not isinstance(items, list):
+        return results
+
+    for item in items:
+        if not isinstance(item, dict):
+            continue
         try:
             # Date range from first to last potential impact
             ip_str = item.get("ip", "0")
-            ps_str = item.get("ps_max", "0")
+            ps_str = item.get("ps_max", item.get("ps_cum", "0"))
             ts_str = item.get("ts_max", "0")
             diam_str = item.get("diameter", "0")
             n_imp_str = item.get("n_imp", "0")

@@ -11,6 +11,9 @@ class ExoplanetTable(DataTable):
 
     def set_planets(self, planets: list[Exoplanet]) -> None:
         self.clear()
+        if not planets:
+            self.add_row("No exoplanets returned", "", "", "", "", key="empty")
+            return
         for p in planets:
             self.add_row(
                 p.name,

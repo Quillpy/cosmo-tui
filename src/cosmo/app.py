@@ -293,13 +293,17 @@ class CosmoApp(App):
         self.title = "cosmo"
         self.sub_title = "NASA Terminal Dashboard"
         self.screen.add_class(f"theme-{self.config.theme}")
+
+        # Start initial refresh in background
+        self.run_worker(self.refresh_all(), thread=False)
         
-        await self.refresh_all()
         interval = max(30, self.config.refresh_interval_seconds)
-        self.set_interval(interval, lambda: asyncio.create_task(self.refresh_all()))
+        self.set_interval(interval, lambda: self.run_worker(self.refresh_all(), thread=False))
         self.set_interval(1.0, self._tick)
         # ISS position updates every 30 seconds (local SGP4 computation)
-        self.set_interval(30, lambda: asyncio.create_task(self._update_iss()))
+        self.set_interval(30, lambda: self.run_worker(self._update_iss(), thread=False))
+
+        self.notify("\U0001F680 Initializing data systems...", timeout=3)
 
     def _tick(self) -> None:
         if self.status_bar and self.status_bar.next_refresh_in > 0:
@@ -317,21 +321,19 @@ class CosmoApp(App):
             self.status_bar.next_refresh_in = max(30, self.config.refresh_interval_seconds)
         
         try:
-            await asyncio.gather(
-                self._load_events(),
-                self._load_neos(),
-                self._load_weather(),
-                self._load_apod(),
-                self._load_fireballs(),
-                self._load_sentry(),
-                self._load_mars(),
-                self._load_epic(),
-                self._load_mars_weather(),
-                self._load_exoplanets(),
-                self._load_iss_passes(),
-                self._update_iss(),
-                return_exceptions=True,
-            )
+            # Fetch sequentially to avoid bursting rate-limited APIs on startup.
+            await self._load_events()
+            await self._load_neos()
+            await self._load_weather()
+            await self._load_apod()
+            await self._load_fireballs()
+            await self._load_sentry()
+            await self._load_mars()
+            await self._load_epic()
+            await self._load_mars_weather()
+            await self._load_exoplanets()
+            await self._load_iss_passes()
+            await self._update_iss()
             if self.status_bar:
                 self.status_bar.last_refresh = datetime.now()
                 self.status_bar.rate_remaining = self.client.rate_limit_remaining
@@ -393,8 +395,10 @@ class CosmoApp(App):
             photos = await fetch_all_rovers_latest(self.client)
             if self.mars_table:
                 self.mars_table.set_photos(photos)
-        except Exception as e:
-            self.notify(f"Failed to load mars photos: {e}", title="API Error", severity="error")
+        except Exception:
+            if self.mars_table:
+                self.mars_table.set_photos([])
+            # The Mars Rover photos API has been archived and currently returns 404s.
 
     async def _load_epic(self) -> None:
         try:

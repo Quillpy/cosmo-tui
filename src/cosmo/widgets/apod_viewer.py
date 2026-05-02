@@ -34,7 +34,8 @@ class ApodViewer(Widget):
     def render(self) -> Text:
         t = Text()
         if not self.apod:
-            t.append("Loading Astronomy Picture of the Day...\n", style="dim")
+            t.append("Astronomy Picture of the Day\n", style="bold #00d4ff")
+            t.append("Loading latest APOD...\n", style="bold")
             return t
         a = self.apod
         t.append(f"{a.title}\n", style="bold #c678dd")
