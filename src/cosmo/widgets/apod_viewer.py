@@ -14,14 +14,24 @@ class ApodViewer(Widget):
     ]
     can_focus = True
     apod: reactive[Apod | None] = reactive(None, recompose=False)
+    error_message: reactive[str] = reactive("", recompose=False)
 
     def set_apod(self, apod: Apod | None) -> None:
+        self.error_message = ""
         self.apod = apod
+        self.refresh()
+
+    def set_error(self, message: str) -> None:
+        self.error_message = message
+        self.apod = None
         self.refresh()
 
     async def action_save(self) -> None:
         if not self.apod or not self.apod.url:
             self.app.notify("No image available to save", severity="error")
+            return
+        if self.apod.media_type != "image":
+            self.app.notify("Only APOD images can be saved", severity="error")
             return
         
         url = self.apod.hdurl or self.apod.url
@@ -33,6 +43,10 @@ class ApodViewer(Widget):
 
     def render(self) -> Text:
         t = Text()
+        if self.error_message:
+            t.append("Astronomy Picture of the Day\n", style="bold #00d4ff")
+            t.append(f"{self.error_message}\n", style="bold red")
+            return t
         if not self.apod:
             t.append("Astronomy Picture of the Day\n", style="bold #00d4ff")
             t.append("Loading latest APOD...\n", style="bold")

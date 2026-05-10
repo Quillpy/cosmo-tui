@@ -33,6 +33,9 @@ async def fetch_fireballs(client: NasaClient, days: int = 365) -> list[Fireball]
         },
     )
     results: list[Fireball] = []
+    if not isinstance(data, dict):
+        return results
+
     fields = data.get("fields", [])
     rows = data.get("data", [])
     if not fields or not rows:

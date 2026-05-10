@@ -9,4 +9,13 @@ build/
 .venv/
 venv/
 .env
+.env.*
+.codex/
+.agents/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 *.log
+testapi.py

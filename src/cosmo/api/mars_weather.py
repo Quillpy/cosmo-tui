@@ -8,36 +8,45 @@ class MarsWeather:
     temp_min: float
     temp_max: float
     pressure: float
-    wind_direction: str
+    atmo_opacity: str
     season: str
-    atmo_temp: float
+    terrestrial_date: str
 
 async def fetch_curiosity_weather(client: NasaClient) -> MarsWeather:
-    """Fetch latest weather report from NASA's InSight Mars weather API."""
+    """Fetch latest weather report from Curiosity (MSL) via NASA's RSS API."""
+    # Using the MSL weather feed from mars.nasa.gov
     data = await client.get(
-        "https://api.nasa.gov/insight_weather/",
-        params={"feedtype": "json", "ver": "1.0"},
+        "https://mars.nasa.gov/rss/api/",
+        params={"feed": "weather", "category": "msl", "feedtype": "json"},
     )
     if not isinstance(data, dict):
         raise ValueError("Failed to fetch Mars weather data")
 
-    sol_keys = data.get("sol_keys") or []
-    if not sol_keys:
-        raise ValueError("No Mars weather sols available")
+    soles = data.get("soles") or []
+    if not soles:
+        raise ValueError("No Mars weather soles available")
 
-    sol = sol_keys[-1]
-    sol_data = data.get(sol) or {}
-    at = sol_data.get("AT") or {}
-    pre = sol_data.get("PRE") or {}
-    wd = sol_data.get("WD") or {}
-    most_common = wd.get("most_common") or {}
+    # Get the latest sol
+    sol_data = soles[0]
+
+    def to_float(val: object) -> float:
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return 0.0
+
+    def to_int(val: object) -> int:
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return 0
 
     return MarsWeather(
-        sol=int(sol),
-        temp_min=float(at.get("mn", 0.0)),
-        temp_max=float(at.get("mx", 0.0)),
-        pressure=float(pre.get("av", 0.0)),
-        wind_direction=most_common.get("compass_point", "Unknown"),
-        season=sol_data.get("Season", "Unknown"),
-        atmo_temp=float(at.get("av", 0.0)),
+        sol=to_int(sol_data.get("sol", 0)),
+        temp_min=to_float(sol_data.get("min_temp", "0")),
+        temp_max=to_float(sol_data.get("max_temp", "0")),
+        pressure=to_float(sol_data.get("pressure", "0")),
+        atmo_opacity=sol_data.get("atmo_opacity", "Unknown"),
+        season=sol_data.get("season", "Unknown"),
+        terrestrial_date=sol_data.get("terrestrial_date", "Unknown"),
     )

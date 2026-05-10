@@ -20,6 +20,8 @@ class Apod:
 
 async def fetch_apod(client: NasaClient) -> Apod:
     data = await client.get(APOD_URL)
+    if not isinstance(data, dict) or not data.get("title"):
+        raise ValueError("Invalid APOD data received")
     return Apod(
         title=data.get("title", ""),
         date=data.get("date", ""),

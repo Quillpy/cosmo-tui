@@ -36,8 +36,7 @@ def first_run_setup(use_demo: bool = False) -> Config:
         else:
             print("Validating key...")
             if not validate_api_key(key):
-                print("\u2717 Key validation failed. Falling back to DEMO_KEY.")
-                key = DEMO_KEY
+                print("\u26A0 Key validation failed. Saving the provided key anyway.")
             else:
                 print("\u2713 Key validated successfully.")
 

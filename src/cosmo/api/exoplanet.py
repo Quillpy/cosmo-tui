@@ -23,12 +23,18 @@ async def fetch_recent_exoplanets(client: NasaClient, limit: int = 10) -> list[E
         return planets
         
     for item in data:
+        if not isinstance(item, dict):
+            continue
+        try:
+            year = int(item.get("disc_year") or 0)
+        except (TypeError, ValueError):
+            year = 0
         planets.append(Exoplanet(
-            name=item.get("pl_name", "Unknown"),
-            host_star=item.get("hostname", "Unknown"),
-            method=item.get("discoverymethod", "Unknown"),
-            year=int(item.get("disc_year", 0)),
-            pub_date=item.get("disc_pubdate", "Unknown")
+            name=item.get("pl_name") or "Unknown",
+            host_star=item.get("hostname") or "Unknown",
+            method=item.get("discoverymethod") or "Unknown",
+            year=year,
+            pub_date=item.get("disc_pubdate") or "Unknown"
         ))
     
     return planets

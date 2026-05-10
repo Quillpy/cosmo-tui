@@ -17,7 +17,7 @@ class SentryWatch(DataTable):
         if not objects:
             self.add_row("No Sentry objects available", "", "", "", "", "", "", key="empty")
             return
-        for obj in objects:
+        for index, obj in enumerate(objects):
             # Color code by Torino scale
             if obj.torino_scale >= 5:
                 name = f"[bold red]{obj.name}[/]"
@@ -49,5 +49,5 @@ class SentryWatch(DataTable):
                 torino,
                 diam,
                 obj.last_obs,
-                key=obj.designation,
+                key=f"{index}:{obj.designation or obj.name}",
             )

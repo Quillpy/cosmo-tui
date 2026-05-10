@@ -23,14 +23,20 @@ async def search_nasa_media(client: NasaClient, query: str) -> list[MediaResult]
     items = collection.get("items", [])
     
     for item in items:
+        if not isinstance(item, dict):
+            continue
         meta_list = item.get("data", [])
         if not meta_list:
             continue
         meta = meta_list[0]
+        if not isinstance(meta, dict):
+            continue
         
         links = item.get("links", [])
         thumb = ""
-        for link in links:
+        for link in links if isinstance(links, list) else []:
+            if not isinstance(link, dict):
+                continue
             if link.get("rel") == "preview":
                 thumb = link.get("href", "")
                 break

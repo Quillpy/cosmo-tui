@@ -7,6 +7,8 @@ colored elements on the map.
 """
 from __future__ import annotations
 
+from typing import Any
+
 from rich.text import Text
 from textual.reactive import reactive
 from textual.widget import Widget
@@ -50,7 +52,7 @@ class WorldMap(Widget):
         land_style = "#00ff00 on #000000" if is_classic else "#a0a0c0 on #0a0a0f"
         sea_style = "on #000000" if is_classic else "on #0a0a0f"
 
-        styles: list[list[any]] = [
+        styles: list[list[Any]] = [
             [land_style if ch != "\u2800" else sea_style for ch in r] for r in rows
         ]
 

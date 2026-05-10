@@ -42,6 +42,8 @@ class Event:
 
 async def fetch_events(client: NasaClient, limit: int = 100, days: int = 30) -> list[Event]:
     data = await client.get(EONET_URL, params={"limit": limit, "days": days, "status": "all"})
+    if not isinstance(data, dict):
+        return []
     events: list[Event] = []
     for item in data.get("events", []):
         cats = item.get("categories") or []

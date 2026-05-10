@@ -30,6 +30,7 @@ async def fetch_space_weather(client: NasaClient, days: int = 7) -> list[Weather
     params = {"startDate": start, "endDate": end}
 
     async def safe_fetch(path: str) -> list[dict]:
+        # We still swallow individual failures to allow partial data (e.g. if only CME fails)
         try:
             data = await client.get(f"{DONKI_BASE}/{path}", params)
             return data if isinstance(data, list) else []

@@ -13,10 +13,17 @@ class EpicViewer(Widget):
         Binding("s", "save", "Save Latest"),
     ]
     can_focus = True
-    images: reactive[list[EpicImage]] = reactive(list, recompose=False)
+    images: reactive[list[EpicImage] | None] = reactive(None, recompose=False)
+    error_message: reactive[str] = reactive("", recompose=False)
 
     def set_images(self, images: list[EpicImage]) -> None:
+        self.error_message = ""
         self.images = list(images)
+        self.refresh()
+
+    def set_error(self, message: str) -> None:
+        self.error_message = message
+        self.images = []
         self.refresh()
 
     async def action_save(self) -> None:
@@ -33,9 +40,17 @@ class EpicViewer(Widget):
 
     def render(self) -> Text:
         t = Text()
-        if not self.images:
+        if self.error_message:
+            t.append("Latest EPIC Earth Imagery\n", style="bold #00d4ff")
+            t.append(f"{self.error_message}\n", style="bold red")
+            return t
+        if self.images is None:
             t.append("Latest EPIC Earth Imagery\n", style="bold #00d4ff")
             t.append("Loading latest DSCOVR images...\n", style="bold")
+            return t
+        if not self.images:
+            t.append("Latest EPIC Earth Imagery\n", style="bold #00d4ff")
+            t.append("No EPIC images returned.\n", style="bold yellow")
             return t
         
         t.append("Latest EPIC Earth Imagery\n", style="bold #00d4ff")

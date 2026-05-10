@@ -16,10 +16,17 @@ KIND_COLORS = {
 
 
 class SpaceWeatherPanel(Widget):
-    events: reactive[list[WeatherEvent]] = reactive(list, recompose=False)
+    events: reactive[list[WeatherEvent] | None] = reactive(None, recompose=False)
+    error_message: reactive[str] = reactive("", recompose=False)
 
     def set_events(self, events: list[WeatherEvent]) -> None:
+        self.error_message = ""
         self.events = list(events)
+        self.refresh()
+
+    def set_error(self, message: str) -> None:
+        self.error_message = message
+        self.events = []
         self.refresh()
 
     def _summary(self) -> tuple[str, str]:
@@ -42,6 +49,16 @@ class SpaceWeatherPanel(Widget):
 
     def render(self) -> Text:
         t = Text()
+        if self.error_message:
+            t.append("Space Weather Status: ", style="bold")
+            t.append("Unavailable\n\n", style="bold red")
+            t.append(self.error_message + "\n", style="red")
+            return t
+        if self.events is None:
+            t.append("Space Weather Status: ", style="bold")
+            t.append("Loading...\n\n", style="bold yellow")
+            return t
+
         level, color = self._summary()
         t.append("Space Weather Status: ", style="bold")
         t.append(level + "\n\n", style=f"bold {color}")

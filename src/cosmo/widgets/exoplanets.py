@@ -14,12 +14,12 @@ class ExoplanetTable(DataTable):
         if not planets:
             self.add_row("No exoplanets returned", "", "", "", "", key="empty")
             return
-        for p in planets:
+        for index, p in enumerate(planets):
             self.add_row(
                 p.name,
                 p.host_star,
                 p.method,
                 str(p.year),
                 p.pub_date,
-                key=p.name
+                key=f"{index}:{p.name}",
             )

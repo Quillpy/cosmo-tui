@@ -15,19 +15,16 @@ from .api.eonet import fetch_events
 from .api.epic import fetch_latest_epic
 from .api.exoplanet import fetch_recent_exoplanets
 from .api.fireball import fetch_fireballs
-from .api.mars import fetch_all_rovers_latest
 from .api.mars_weather import fetch_curiosity_weather
 from .api.neows import fetch_neos
 from .api.sentry import fetch_sentry_objects
 from .api.tle import fetch_iss_position
-from .config import Config
+from .config import Config, MIN_REFRESH_SECONDS
 from .widgets.apod_viewer import ApodViewer
 from .widgets.asteroid import AsteroidTable
 from .widgets.epic_viewer import EpicViewer
 from .widgets.event_list import EventList
 from .widgets.exoplanets import ExoplanetTable
-from .widgets.iss_passes import IssPasses
-from .widgets.mars_rover import MarsRoverTable
 from .widgets.mars_weather import MarsWeatherPanel
 from .widgets.media_search import MediaSearch
 from .widgets.sentry_watch import SentryWatch
@@ -43,7 +40,7 @@ class CosmoApp(App):
     $bg-active: #1a1a2e;
     $bg-cursor: #1a1a3e;
     $bg-row-even: #0c0c14;
-    
+
     $fg-base: #a0a0c0;
     $fg-muted: #555577;
     $fg-accent: #00d4ff;
@@ -235,11 +232,9 @@ class CosmoApp(App):
         self.apod_viewer: ApodViewer | None = None
         self.sentry_watch: SentryWatch | None = None
         self.epic_viewer: EpicViewer | None = None
-        self.mars_table: MarsRoverTable | None = None
         self.mars_weather: MarsWeatherPanel | None = None
         self.exoplanet_table: ExoplanetTable | None = None
         self.media_search: MediaSearch | None = None
-        self.iss_passes: IssPasses | None = None
         self.status_bar: StatusBar | None = None
         self._refreshing = False
 
@@ -269,9 +264,6 @@ class CosmoApp(App):
                     with TabPane("APOD", id="tab-apod"):
                         self.apod_viewer = ApodViewer()
                         yield self.apod_viewer
-                    with TabPane("Mars Photos", id="tab-mars"):
-                        self.mars_table = MarsRoverTable()
-                        yield self.mars_table
                     with TabPane("EPIC", id="tab-epic"):
                         self.epic_viewer = EpicViewer()
                         yield self.epic_viewer
@@ -281,9 +273,6 @@ class CosmoApp(App):
                     with TabPane("NASA Search", id="tab-search"):
                         self.media_search = MediaSearch()
                         yield self.media_search
-                    with TabPane("ISS Passes", id="tab-iss"):
-                        self.iss_passes = IssPasses()
-                        yield self.iss_passes
         self.status_bar = StatusBar()
         self.status_bar.theme_name = self.config.theme
         yield self.status_bar
@@ -296,8 +285,8 @@ class CosmoApp(App):
 
         # Start initial refresh in background
         self.run_worker(self.refresh_all(), thread=False)
-        
-        interval = max(30, self.config.refresh_interval_seconds)
+
+        interval = max(MIN_REFRESH_SECONDS, self.config.refresh_interval_seconds)
         self.set_interval(interval, lambda: self.run_worker(self.refresh_all(), thread=False))
         self.set_interval(1.0, self._tick)
         # ISS position updates every 30 seconds (local SGP4 computation)
@@ -306,7 +295,7 @@ class CosmoApp(App):
         self.notify("\U0001F680 Initializing data systems...", timeout=3)
 
     def _tick(self) -> None:
-        if self.status_bar and self.status_bar.next_refresh_in > 0:
+        if self.status_bar is not None and self.status_bar.next_refresh_in > 0:
             self.status_bar.next_refresh_in -= 1
 
     async def on_unmount(self) -> None:
@@ -316,25 +305,30 @@ class CosmoApp(App):
         if self._refreshing:
             return
         self._refreshing = True
-        
-        if self.status_bar:
-            self.status_bar.next_refresh_in = max(30, self.config.refresh_interval_seconds)
-        
+
+        if self.status_bar is not None:
+            self.status_bar.next_refresh_in = max(MIN_REFRESH_SECONDS, self.config.refresh_interval_seconds)
+
         try:
-            # Fetch sequentially to avoid bursting rate-limited APIs on startup.
-            await self._load_events()
-            await self._load_neos()
-            await self._load_weather()
-            await self._load_apod()
-            await self._load_fireballs()
-            await self._load_sentry()
-            await self._load_mars()
-            await self._load_epic()
-            await self._load_mars_weather()
-            await self._load_exoplanets()
-            await self._load_iss_passes()
-            await self._update_iss()
-            if self.status_bar:
+            # Run loads in parallel to be more responsive.
+            # We use small groups to avoid overwhelming the rate limit immediately
+            # if the user is on DEMO_KEY.
+            await asyncio.gather(
+                self._load_events(),
+                self._load_neos(),
+                self._load_weather(),
+                self._load_apod(),
+            )
+            await asyncio.gather(
+                self._load_fireballs(),
+                self._load_sentry(),
+                self._load_epic(),
+                self._load_mars_weather(),
+                self._load_exoplanets(),
+                self._update_iss(),
+            )
+
+            if self.status_bar is not None:
                 self.status_bar.last_refresh = datetime.now()
                 self.status_bar.rate_remaining = self.client.rate_limit_remaining
         finally:
@@ -343,9 +337,9 @@ class CosmoApp(App):
     async def _load_events(self) -> None:
         try:
             events = await fetch_events(self.client, limit=80, days=30)
-            if self.world_map:
+            if self.world_map is not None:
                 self.world_map.set_events(events)
-            if self.event_list:
+            if self.event_list is not None:
                 self.event_list.set_events(events)
         except Exception as e:
             self.notify(f"Failed to load events: {e}", title="API Error", severity="error")
@@ -353,7 +347,7 @@ class CosmoApp(App):
     async def _load_neos(self) -> None:
         try:
             neos = await fetch_neos(self.client, days=7)
-            if self.asteroid_table:
+            if self.asteroid_table is not None:
                 self.asteroid_table.set_neos(neos)
         except Exception as e:
             self.notify(f"Failed to load neos: {e}", title="API Error", severity="error")
@@ -361,23 +355,27 @@ class CosmoApp(App):
     async def _load_weather(self) -> None:
         try:
             evs = await fetch_space_weather(self.client, days=7)
-            if self.weather_panel:
+            if self.weather_panel is not None:
                 self.weather_panel.set_events(evs)
         except Exception as e:
+            if self.weather_panel is not None:
+                self.weather_panel.set_error(f"Failed to load space weather: {e}")
             self.notify(f"Failed to load weather: {e}", title="API Error", severity="error")
 
     async def _load_apod(self) -> None:
         try:
             apod = await fetch_apod(self.client)
-            if self.apod_viewer:
+            if self.apod_viewer is not None:
                 self.apod_viewer.set_apod(apod)
         except Exception as e:
+            if self.apod_viewer is not None:
+                self.apod_viewer.set_error(f"Failed to load APOD: {e}")
             self.notify(f"Failed to load apod: {e}", title="API Error", severity="error")
 
     async def _load_fireballs(self) -> None:
         try:
             fireballs = await fetch_fireballs(self.client, days=365)
-            if self.world_map:
+            if self.world_map is not None:
                 self.world_map.set_fireballs(fireballs)
         except Exception as e:
             self.notify(f"Failed to load fireballs: {e}", title="API Error", severity="error")
@@ -385,56 +383,43 @@ class CosmoApp(App):
     async def _load_sentry(self) -> None:
         try:
             objects = await fetch_sentry_objects(self.client)
-            if self.sentry_watch:
+            if self.sentry_watch is not None:
                 self.sentry_watch.set_objects(objects)
         except Exception as e:
             self.notify(f"Failed to load sentry objects: {e}", title="API Error", severity="error")
 
-    async def _load_mars(self) -> None:
-        try:
-            photos = await fetch_all_rovers_latest(self.client)
-            if self.mars_table:
-                self.mars_table.set_photos(photos)
-        except Exception:
-            if self.mars_table:
-                self.mars_table.set_photos([])
-            # The Mars Rover photos API has been archived and currently returns 404s.
-
     async def _load_epic(self) -> None:
         try:
             images = await fetch_latest_epic(self.client)
-            if self.epic_viewer:
+            if self.epic_viewer is not None:
                 self.epic_viewer.set_images(images)
         except Exception as e:
+            if self.epic_viewer is not None:
+                self.epic_viewer.set_error(f"Failed to load EPIC images: {e}")
             self.notify(f"Failed to load epic images: {e}", title="API Error", severity="error")
 
     async def _load_mars_weather(self) -> None:
         try:
             w = await fetch_curiosity_weather(self.client)
-            if self.mars_weather:
+            if self.mars_weather is not None:
                 self.mars_weather.set_weather(w)
         except Exception as e:
+            if self.mars_weather is not None:
+                self.mars_weather.set_error(f"Failed to load Mars weather: {e}")
             self.notify(f"Failed to load Mars weather: {e}", title="API Error", severity="error")
 
     async def _load_exoplanets(self) -> None:
         try:
             planets = await fetch_recent_exoplanets(self.client)
-            if self.exoplanet_table:
+            if self.exoplanet_table is not None:
                 self.exoplanet_table.set_planets(planets)
         except Exception as e:
             self.notify(f"Failed to load exoplanets: {e}", title="API Error", severity="error")
 
-    async def _load_iss_passes(self) -> None:
-        try:
-            if self.iss_passes:
-                await self.iss_passes.refresh_passes(self.client)
-        except Exception as e:
-            self.notify(f"Failed to load ISS passes: {e}", title="API Error", severity="error")
-
     async def _update_iss(self) -> None:
         try:
             pos = await fetch_iss_position(self.client)
-            if self.world_map:
+            if self.world_map is not None:
                 self.world_map.set_iss(pos.lat, pos.lon)
         except Exception as e:
             self.notify(f"Failed to update ISS position: {e}", title="API Error", severity="error")
@@ -449,7 +434,7 @@ class CosmoApp(App):
             "tabs": self.asteroid_table,
         }
         w = targets.get(name)
-        if w:
+        if w is not None:
             w.focus()
 
     def action_help(self) -> None:
@@ -460,5 +445,5 @@ class CosmoApp(App):
         )
 
     def on_event_list_event_selected(self, message: EventList.EventSelected) -> None:
-        if self.world_map:
+        if self.world_map is not None:
             self.world_map.set_selected(message.event_id)

@@ -24,6 +24,8 @@ async def fetch_sentry_objects(client: NasaClient) -> list[SentryObject]:
     """Fetch NEOs with non-zero Earth impact probability from Sentry."""
     data = await client.get(SENTRY_URL)
     results: list[SentryObject] = []
+    if not isinstance(data, dict):
+        return results
 
     items = data.get("data", [])
     if not isinstance(items, list):

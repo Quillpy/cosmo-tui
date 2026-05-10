@@ -27,6 +27,8 @@ async def fetch_neos(client: NasaClient, days: int = 7) -> list[Neo]:
         NEOWS_URL,
         params={"start_date": today.isoformat(), "end_date": end.isoformat()},
     )
+    if not isinstance(data, dict):
+        return []
     results: list[Neo] = []
     for day, objs in (data.get("near_earth_objects") or {}).items():
         for o in objs:
