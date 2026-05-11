@@ -150,7 +150,22 @@ class CosmoApp(App):
         height: 1fr;
         border: solid $border-normal;
     }
-    SpaceWeatherPanel, ApodViewer { padding: 1; }
+    TabbedContent ContentSwitcher {
+        height: 1fr;
+        background: $bg-base;
+    }
+    TabPane {
+        height: 1fr;
+        background: $bg-base;
+    }
+    AsteroidTable, SpaceWeatherPanel, MarsWeatherPanel, ExoplanetTable,
+    ApodViewer, EpicViewer, SentryWatch, MediaSearch {
+        width: 1fr;
+        height: 1fr;
+    }
+    SpaceWeatherPanel, MarsWeatherPanel, ApodViewer, EpicViewer {
+        padding: 1;
+    }
     StatusBar { height: 2; }
 
     Header {
@@ -189,9 +204,6 @@ class CosmoApp(App):
         background: $bg-base;
     }
 
-    TabbedContent ContentSwitcher {
-        background: $bg-base;
-    }
     Tabs {
         background: $bg-panel;
     }
@@ -206,9 +218,6 @@ class CosmoApp(App):
     }
     Tab:hover {
         color: $fg-highlight;
-    }
-    TabPane {
-        background: $bg-base;
     }
     """
 
